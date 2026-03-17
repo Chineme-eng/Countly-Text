@@ -7,27 +7,29 @@ const charCountEl = document.getElementById("charCount");
 const charNoSpacesEl = document.getElementById("charNoSpaces");
 const sentenceCountEl = document.getElementById("sentenceCount");
 const paragraphCountEl = document.getElementById("paragraphCount");
+const pageCountEl = document.getElementById("pageCount");
 const readingTimeEl = document.getElementById("readingTime");
 const speakingTimeEl = document.getElementById("speakingTime");
-const pageCountEl = document.getElementById("pageCount");
 const avgWordLengthEl = document.getElementById("avgWordLength");
 const avgSentenceLengthEl = document.getElementById("avgSentenceLength");
 const readingGradeEl = document.getElementById("readingGrade");
 const difficultyLevelEl = document.getElementById("difficultyLevel");
 const longestWordEl = document.getElementById("longestWord");
-const longestSentenceEl = document.getElementById("longestSentence");
+const longestSentenceWordsEl = document.getElementById("longestSentenceWords");
+const repeatedWordsEl = document.getElementById("repeatedWords");
+
+const heroWordsEl = document.getElementById("heroWords");
+const heroReadingEl = document.getElementById("heroReading");
+const heroGradeEl = document.getElementById("heroGrade");
 
 function formatTime(minutesDecimal) {
   const totalSeconds = Math.ceil(minutesDecimal * 60);
-
   if (totalSeconds <= 0) return "0 sec";
   if (totalSeconds < 60) return `${totalSeconds} sec`;
 
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
-
-  if (seconds === 0) return `${minutes} min`;
-  return `${minutes} min ${seconds} sec`;
+  return seconds === 0 ? `${minutes} min` : `${minutes} min ${seconds} sec`;
 }
 
 function countSyllables(word) {
@@ -35,8 +37,8 @@ function countSyllables(word) {
   if (!cleaned) return 0;
   if (cleaned.length <= 3) return 1;
 
-  const withoutEnding = cleaned.replace(/(?:es|ed|e)$/, "");
-  const matches = withoutEnding.match(/[aeiouy]{1,2}/g);
+  const simplified = cleaned.replace(/(?:es|ed|e)$/, "");
+  const matches = simplified.match(/[aeiouy]{1,2}/g);
   return matches ? matches.length : 1;
 }
 
@@ -48,26 +50,46 @@ function getDifficultyLabel(grade) {
   return "Advanced Academic";
 }
 
+function getRepeatedWords(words) {
+  const ignore = new Set([
+    "the", "a", "an", "and", "or", "but", "if", "then", "than", "so", "of",
+    "to", "in", "on", "for", "at", "by", "with", "is", "it", "this", "that",
+    "as", "are", "was", "were", "be", "from", "you", "your", "i"
+  ]);
+
+  const counts = {};
+  for (const rawWord of words) {
+    const word = rawWord.toLowerCase();
+    if (word.length < 3 || ignore.has(word)) continue;
+    counts[word] = (counts[word] || 0) + 1;
+  }
+
+  return Object.entries(counts)
+    .filter(([, count]) => count > 1)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6);
+}
+
 function updateStats() {
   const text = textInput.value;
-  const trimmedText = text.trim();
+  const trimmed = text.trim();
 
-  const words = trimmedText ? trimmedText.match(/\b[\w'-]+\b/g) || [] : [];
-  const sentences = trimmedText
-    ? trimmedText.match(/[^.!?]+[.!?]*/g)?.filter(s => s.trim().length > 0) || []
+  const words = trimmed ? trimmed.match(/\b[\w'-]+\b/g) || [] : [];
+  const sentences = trimmed
+    ? trimmed.match(/[^.!?]+[.!?]*/g)?.filter(s => s.trim().length > 0) || []
     : [];
-  const paragraphs = trimmedText
-    ? trimmedText.split(/\n\s*\n/).filter(p => p.trim().length > 0)
+  const paragraphs = trimmed
+    ? trimmed.split(/\n\s*\n/).filter(p => p.trim().length > 0)
     : [];
 
-  const charCount = text.length;
-  const charNoSpaces = text.replace(/\s/g, "").length;
-  const sentenceCount = sentences.length;
-  const paragraphCount = paragraphs.length || (trimmedText ? 1 : 0);
+  const characters = text.length;
+  const charactersNoSpaces = text.replace(/\s/g, "").length;
+  const pages = words.length ? (words.length / 500).toFixed(1) : "0";
 
-  let longestWord = "—";
   let totalWordLength = 0;
   let totalSyllables = 0;
+  let longestWord = "—";
+  let longestSentenceWords = 0;
 
   for (const word of words) {
     totalWordLength += word.length;
@@ -78,48 +100,60 @@ function updateStats() {
     }
   }
 
-  let longestSentence = "—";
-  let longestSentenceWordCount = 0;
-
   for (const sentence of sentences) {
     const sentenceWords = sentence.match(/\b[\w'-]+\b/g) || [];
-    if (sentenceWords.length > longestSentenceWordCount) {
-      longestSentenceWordCount = sentenceWords.length;
-      longestSentence = sentence.trim();
+    if (sentenceWords.length > longestSentenceWords) {
+      longestSentenceWords = sentenceWords.length;
     }
   }
 
   const avgWordLength = words.length ? (totalWordLength / words.length).toFixed(1) : "0";
-  const avgSentenceLength = sentenceCount ? (words.length / sentenceCount).toFixed(1) : "0";
+  const avgSentenceLength = sentences.length ? (words.length / sentences.length).toFixed(1) : "0";
   const readingMinutes = words.length / 200;
   const speakingMinutes = words.length / 130;
-  const pages = words.length ? (words.length / 500).toFixed(1) : "0";
 
   let readingGrade = 0;
-  if (words.length > 0 && sentenceCount > 0) {
+  if (words.length > 0 && sentences.length > 0) {
     readingGrade =
-      0.39 * (words.length / sentenceCount) +
+      0.39 * (words.length / sentences.length) +
       11.8 * (totalSyllables / words.length) -
       15.59;
   }
 
-  const gradeRounded = readingGrade > 0 ? readingGrade.toFixed(1) : "0";
-  const difficultyLabel = readingGrade > 0 ? getDifficultyLabel(readingGrade) : "—";
+  const gradeDisplay = readingGrade > 0 ? readingGrade.toFixed(1) : "0";
+  const difficulty = readingGrade > 0 ? getDifficultyLabel(readingGrade) : "—";
+  const repeatedWords = getRepeatedWords(words);
 
   wordCountEl.textContent = words.length;
-  charCountEl.textContent = charCount;
-  charNoSpacesEl.textContent = charNoSpaces;
-  sentenceCountEl.textContent = sentenceCount;
-  paragraphCountEl.textContent = paragraphCount;
+  charCountEl.textContent = characters;
+  charNoSpacesEl.textContent = charactersNoSpaces;
+  sentenceCountEl.textContent = sentences.length;
+  paragraphCountEl.textContent = paragraphs.length || (trimmed ? 1 : 0);
+  pageCountEl.textContent = pages;
   readingTimeEl.textContent = formatTime(readingMinutes);
   speakingTimeEl.textContent = formatTime(speakingMinutes);
-  pageCountEl.textContent = pages;
   avgWordLengthEl.textContent = avgWordLength;
   avgSentenceLengthEl.textContent = avgSentenceLength;
-  readingGradeEl.textContent = gradeRounded;
-  difficultyLevelEl.textContent = difficultyLabel;
+  readingGradeEl.textContent = gradeDisplay;
+  difficultyLevelEl.textContent = difficulty;
   longestWordEl.textContent = longestWord;
-  longestSentenceEl.textContent = longestSentence;
+  longestSentenceWordsEl.textContent = `${longestSentenceWords} words`;
+
+  heroWordsEl.textContent = words.length;
+  heroReadingEl.textContent = formatTime(readingMinutes);
+  heroGradeEl.textContent = gradeDisplay;
+
+  repeatedWordsEl.innerHTML = "";
+  if (repeatedWords.length === 0) {
+    repeatedWordsEl.innerHTML = `<span class="chip muted">None yet</span>`;
+  } else {
+    repeatedWords.forEach(([word, count]) => {
+      const chip = document.createElement("span");
+      chip.className = "chip";
+      chip.textContent = `${word} ×${count}`;
+      repeatedWordsEl.appendChild(chip);
+    });
+  }
 }
 
 clearBtn.addEventListener("click", () => {
@@ -129,10 +163,9 @@ clearBtn.addEventListener("click", () => {
 });
 
 sampleBtn.addEventListener("click", () => {
-  textInput.value = `Clear writing is one of the fastest ways to make ideas easier to understand. A strong word counter does more than count words. It helps writers measure readability, estimate timing, and understand how difficult their text may feel to different readers. When tools are clean, useful, and fast, people come back to them again and again.`;
+  textInput.value = `Clear writing matters because it helps people understand ideas faster. Writers, students, founders, and creators all benefit from tools that reveal how long a piece takes to read, how difficult it feels, and which words appear too often. A good counter should feel simple, elegant, and genuinely useful.`;
   updateStats();
 });
 
 textInput.addEventListener("input", updateStats);
-
 updateStats();
