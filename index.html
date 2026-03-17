@@ -111,6 +111,18 @@
             <div id="analysisPreview" class="analysis-preview">
               Start typing to see highlighted analysis.
             </div>
+
+            <div id="wordCaseMenu" class="word-case-menu hidden" aria-hidden="true">
+              <div class="word-case-title">
+                Edit repeated word: <strong id="wordCaseTarget">—</strong>
+              </div>
+              <div class="word-case-actions">
+                <button type="button" id="toUpperBtn">UPPERCASE</button>
+                <button type="button" id="toLowerBtn">lowercase</button>
+                <button type="button" id="toTitleBtn">Title Case</button>
+                <button type="button" id="closeCaseMenuBtn" class="ghost">Close</button>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -141,11 +153,27 @@
               <span class="value" id="pageCount">0</span>
             </div>
             <div class="stat-card">
-              <span class="label">Reading Time</span>
+              <span class="label label-with-help">
+                Reading Time
+                <button
+                  type="button"
+                  class="help-trigger"
+                  aria-label="What is reading time?"
+                  data-tooltip="Estimated time to read this text silently at an average pace of about 200 words per minute."
+                >?</button>
+              </span>
               <span class="value small" id="readingTime">0 sec</span>
             </div>
             <div class="stat-card">
-              <span class="label">Speaking Time</span>
+              <span class="label label-with-help">
+                Speaking Time
+                <button
+                  type="button"
+                  class="help-trigger"
+                  aria-label="What is speaking time?"
+                  data-tooltip="Estimated time to speak this text out loud at an average pace of about 130 words per minute."
+                >?</button>
+              </span>
               <span class="value small" id="speakingTime">0 sec</span>
             </div>
             <div class="stat-card">
@@ -215,6 +243,54 @@
       </div>
     </section>
   </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-left">© <span id="currentYear"></span> Countly Text. All rights reserved.</div>
+      <div class="footer-links">
+        <button type="button" class="footer-link" data-modal="termsModal">Terms</button>
+        <button type="button" class="footer-link" data-modal="privacyModal">Privacy Policy</button>
+        <button type="button" class="footer-link" data-modal="contactModal">Contact</button>
+      </div>
+    </div>
+  </footer>
+
+  <div id="modalOverlay" class="modal-overlay hidden" aria-hidden="true">
+    <div id="termsModal" class="modal-card hidden" role="dialog" aria-modal="true" aria-labelledby="termsTitle">
+      <div class="modal-head">
+        <h3 id="termsTitle">Terms</h3>
+        <button type="button" class="modal-close" data-close-modal>&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Countly Text is provided for general writing assistance and informational use.</p>
+        <p>You are responsible for how you use the tool and any text you enter into it.</p>
+        <p>We do not guarantee perfect accuracy, and the tool should not be treated as legal, academic, or professional advice.</p>
+      </div>
+    </div>
+
+    <div id="privacyModal" class="modal-card hidden" role="dialog" aria-modal="true" aria-labelledby="privacyTitle">
+      <div class="modal-head">
+        <h3 id="privacyTitle">Privacy Policy</h3>
+        <button type="button" class="modal-close" data-close-modal>&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Countly Text runs in your browser and does not require an account.</p>
+        <p>Text you enter is processed on your device and is not stored by this site.</p>
+        <p>If you publish your own updated version later with analytics or forms, you should update this privacy notice to match those features.</p>
+      </div>
+    </div>
+
+    <div id="contactModal" class="modal-card hidden" role="dialog" aria-modal="true" aria-labelledby="contactTitle">
+      <div class="modal-head">
+        <h3 id="contactTitle">Contact</h3>
+        <button type="button" class="modal-close" data-close-modal>&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Questions, feedback, or partnership ideas?</p>
+        <p>Email: <a href="mailto:hello@countlytext.com">hello@countlytext.com</a></p>
+      </div>
+    </div>
+  </div>
 
   <script src="script.js"></script>
 </body>
