@@ -30,6 +30,20 @@ const feedbackLineEl = document.getElementById("feedbackLine");
 const analysisPreviewEl = document.getElementById("analysisPreview");
 const gradeExplanationEl = document.getElementById("gradeExplanation");
 
+const wordCaseMenuEl = document.getElementById("wordCaseMenu");
+const wordCaseTargetEl = document.getElementById("wordCaseTarget");
+const toUpperBtn = document.getElementById("toUpperBtn");
+const toLowerBtn = document.getElementById("toLowerBtn");
+const toTitleBtn = document.getElementById("toTitleBtn");
+const closeCaseMenuBtn = document.getElementById("closeCaseMenuBtn");
+
+const modalOverlayEl = document.getElementById("modalOverlay");
+const modalTriggers = document.querySelectorAll("[data-modal]");
+const modalCloseButtons = document.querySelectorAll("[data-close-modal]");
+const currentYearEl = document.getElementById("currentYear");
+
+let currentRepeatedWord = "";
+
 function formatTime(minutesDecimal) {
   const totalSeconds = Math.ceil(minutesDecimal * 60);
   if (totalSeconds <= 0) return "0 sec";
@@ -155,7 +169,7 @@ function buildAnalysisPreview(text, repeatedWordsSet) {
     safeSentence = safeSentence.replace(/\b[\w'-]+\b/g, (match) => {
       const lower = match.toLowerCase();
       if (repeatedWordsSet.has(lower)) {
-        return `<span class="highlight-repeat">${match}</span>`;
+        return `<span class="highlight-repeat" data-word="${lower}" title="Click to change casing">${match}</span>`;
       }
       return match;
     });
@@ -181,6 +195,65 @@ function updateGradeTone(readingGrade) {
   } else {
     gradeExplanationEl.classList.add("grade-hard");
   }
+}
+
+function escapeRegExp(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function toTitleCase(word) {
+  return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+}
+
+function applyCaseToWord(targetWord, mode) {
+  if (!targetWord) return;
+
+  const regex = new RegExp(`\\b${escapeRegExp(targetWord)}\\b`, "gi");
+
+  textInput.value = textInput.value.replace(regex, (match) => {
+    if (mode === "upper") return match.toUpperCase();
+    if (mode === "lower") return match.toLowerCase();
+    return toTitleCase(match);
+  });
+
+  hideCaseMenu();
+  updateStats();
+  textInput.focus();
+}
+
+function showCaseMenu(word) {
+  currentRepeatedWord = word;
+  wordCaseTargetEl.textContent = word;
+  wordCaseMenuEl.classList.remove("hidden");
+  wordCaseMenuEl.setAttribute("aria-hidden", "false");
+}
+
+function hideCaseMenu() {
+  currentRepeatedWord = "";
+  wordCaseMenuEl.classList.add("hidden");
+  wordCaseMenuEl.setAttribute("aria-hidden", "true");
+}
+
+function openModal(modalId) {
+  modalOverlayEl.classList.remove("hidden");
+  modalOverlayEl.setAttribute("aria-hidden", "false");
+
+  document.querySelectorAll(".modal-card").forEach((modal) => {
+    modal.classList.add("hidden");
+  });
+
+  const targetModal = document.getElementById(modalId);
+  if (targetModal) {
+    targetModal.classList.remove("hidden");
+  }
+}
+
+function closeModals() {
+  modalOverlayEl.classList.add("hidden");
+  modalOverlayEl.setAttribute("aria-hidden", "true");
+  document.querySelectorAll(".modal-card").forEach((modal) => {
+    modal.classList.add("hidden");
+  });
 }
 
 function updateStats() {
@@ -278,6 +351,7 @@ function updateStats() {
   repeatedWordsEl.innerHTML = "";
   if (repeatedWords.length === 0) {
     repeatedWordsEl.innerHTML = `<span class="chip muted">None yet</span>`;
+    hideCaseMenu();
   } else {
     repeatedWords.forEach(([word, count]) => {
       const chip = document.createElement("span");
@@ -298,8 +372,47 @@ function updateStats() {
   ]);
 }
 
+analysisPreviewEl.addEventListener("click", (event) => {
+  const target = event.target.closest(".highlight-repeat");
+  if (!target) return;
+
+  const word = target.dataset.word || "";
+  if (!word) return;
+
+  showCaseMenu(word);
+});
+
+toUpperBtn.addEventListener("click", () => applyCaseToWord(currentRepeatedWord, "upper"));
+toLowerBtn.addEventListener("click", () => applyCaseToWord(currentRepeatedWord, "lower"));
+toTitleBtn.addEventListener("click", () => applyCaseToWord(currentRepeatedWord, "title"));
+closeCaseMenuBtn.addEventListener("click", hideCaseMenu);
+
+modalTriggers.forEach((trigger) => {
+  trigger.addEventListener("click", () => {
+    openModal(trigger.dataset.modal);
+  });
+});
+
+modalCloseButtons.forEach((button) => {
+  button.addEventListener("click", closeModals);
+});
+
+modalOverlayEl.addEventListener("click", (event) => {
+  if (event.target === modalOverlayEl) {
+    closeModals();
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    closeModals();
+    hideCaseMenu();
+  }
+});
+
 clearBtn.addEventListener("click", () => {
   textInput.value = "";
+  hideCaseMenu();
   updateStats();
   textInput.focus();
 });
@@ -309,5 +422,11 @@ sampleBtn.addEventListener("click", () => {
   updateStats();
 });
 
-textInput.addEventListener("input", updateStats);
+textInput.addEventListener("input", () => {
+  hideCaseMenu();
+  updateStats();
+});
+
+currentYearEl.textContent = new Date().getFullYear();
+
 updateStats();
